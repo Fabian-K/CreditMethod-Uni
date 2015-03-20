@@ -116,36 +116,58 @@ public class VirtualMachine {
      * isActive = true
      *
      * @param hops
+     * @param rootProcessId
+     * @param initialCredit
      */
-    public void startProcess(int hops) {
+    public void startProcess(int hops, final int rootProcessId, final int initialCredit) {
         if (Configuration.LOG_VMS || Configuration.LOG_PROCESSES)
-            System.out.println(id + ": startCalculations(" + hops + ")");
+            System.out.println(id + ": startCalculations(" + rootProcessId + "/ " + hops + ") ");
 
-        final int hop = hops;
-        Thread t = new Thread() {
-            public synchronized void run() {
-                isActive = true;
-                int random1 = (int) (Math.random() * 2 + 1);        //number of neighbors which are
-                //needed to finish the calculations
-                for (int i = 0; i < random1; i++) {
-                    int random2 = (int) (Math.random() * 200);
-                    try {
-                        Thread.sleep(random2);                //Simulating processing time
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+        Thread t = new Process(this, initialCredit, hops, rootProcessId);
+        t.start();
+    }
 
-                    if (hop - 1 > 0) {
-                        int neighbor = (int) (Math.random() * neighbors.size());    //randomly assign neighbor for calculations
-                        neighbors.get(neighbor).startProcess(hop - 1);
-                    }
+
+    static class Process extends Thread {
+        VirtualMachine vm;
+        int credit;
+        int hop;
+        int rootProcessId;
+
+        public Process(VirtualMachine vm, int credit, int hop, int rootProcessId) {
+            this.vm = vm;
+            this.credit = credit;
+            this.hop = hop;
+            this.rootProcessId = rootProcessId;
+        }
+
+        public synchronized void run() {
+            vm.isActive = true;
+            int random1 = (int) (Math.random() * 2 + 1);        //number of neighbors which are
+            //needed to finish the calculations
+            for (int i = 0; i < random1; i++) {
+                int random2 = (int) (Math.random() * 200);
+                try {
+                    Thread.sleep(random2);                //Simulating processing time
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
 
-                isActive = false;
-            }
-        };
+                if (hop - 1 > 0) {
+                    int neighbor = (int) (Math.random() * vm.neighbors.size());    //randomly assign neighbor for calculations
 
-        t.start();
+                    credit++;
+                    vm.neighbors.get(neighbor).startProcess(hop - 1, rootProcessId, credit);
+                }
+            }
+
+            vm.getVmInterface().notifyProcessFinished(rootProcessId, credit);
+            vm.isActive = false;
+        }
+    }
+
+    public VMInterface getVmInterface() {
+        return vmInterface;
     }
 
     /**

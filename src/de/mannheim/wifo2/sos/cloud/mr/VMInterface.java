@@ -1,6 +1,6 @@
 package de.mannheim.wifo2.sos.cloud.mr;
 
-import java.util.ArrayList;
+import java.util.*;
 
 /**
  * This is the interface between a server and the virtual machines
@@ -13,6 +13,12 @@ public class VMInterface {
     private Integer idCount = 1;            //ID count for new VMs
 
     //TODO You may extend class variables for your algorithm
+    private int idProcess = 1;
+
+    /**
+     * contains the set of missing credits for each process id
+     */
+    private Map<Integer, Set<Integer>> missingCreditMap;
 
     /**
      * Constructor
@@ -20,6 +26,7 @@ public class VMInterface {
      */
     public VMInterface() {
         vms = new ArrayList<VirtualMachine>();
+        missingCreditMap = new HashMap<Integer, Set<Integer>>();
     }
 
     /**
@@ -135,8 +142,10 @@ public class VMInterface {
      * the process gets a hopcounter of 5-9
      */
     public void startProcesses() {
-        if (Configuration.LOG_PROCESSES || Configuration.LOG_VMINTERFACE)
-            System.out.println("VMInterface: startCalculations()");
+        if (Configuration.LOG_PROCESSES || Configuration.LOG_VMINTERFACE) {
+            System.out.println("VMInterface: ---------------------------------------------");
+            System.out.println("VMInterface: startCalculations() with id " + idProcess);
+        }
 
         if (vms.size() == 0) {
             return;
@@ -146,7 +155,15 @@ public class VMInterface {
         final VirtualMachine vm = vms.get(random);
 
         random = (int) (Math.random() * 5 + 5);
-        vm.startProcess(random);
+
+        // initialize
+        Set<Integer> missingCredits = new HashSet<Integer>();
+        missingCredits.add(0);
+        missingCreditMap.put(idProcess, missingCredits);
+
+        vm.startProcess(random, idProcess, 0);
+
+        idProcess++;
     }
 
     /**
@@ -169,5 +186,24 @@ public class VMInterface {
         Object result = vm.yourAlgorithm();
 
         return result;
+    }
+
+    // a process, initially triggered by rootProcessId finished its calculations
+    // transfer credit back
+    public synchronized void notifyProcessFinished(int rootProcessId, int credit) {
+        System.out.println("VMInterface: Receiving " + credit + " for Process " + rootProcessId);
+        Set<Integer> missingCredits = missingCreditMap.get(rootProcessId);
+        while (!missingCredits.contains(credit)) {
+            missingCredits.add(credit);
+            credit--;
+        }
+
+        missingCredits.remove(credit);
+
+        if (missingCredits.isEmpty()) {
+            System.out.println("VMInterface: Process " + rootProcessId + " is quiescent");
+            System.out.println("VMInterface: ---------------------------------------------");
+            missingCreditMap.remove(rootProcessId);
+        }
     }
 }
