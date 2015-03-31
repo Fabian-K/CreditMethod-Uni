@@ -59,7 +59,7 @@ public class RequestSimulatorTermination extends Thread {
     }
 
     public static void main(String[] args) throws IOException {
-        Thread rs = new RequestSimulatorTermination(InetAddress.getLocalHost(), 9000);
+        Thread rs = new RequestSimulatorTermination(InetAddress.getLoopbackAddress(), 9000);
         rs.start();
     }
 

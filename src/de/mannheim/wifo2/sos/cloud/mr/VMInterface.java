@@ -158,10 +158,10 @@ public class VMInterface {
 
         // initialize
         Set<Integer> missingCredits = new HashSet<Integer>();
-        missingCredits.add(0);
+        missingCredits.add(1);
         missingCreditMap.put(idProcess, missingCredits);
 
-        vm.startProcess(random, idProcess, 0);
+        vm.startProcess(random, idProcess, 1);
 
         idProcess++;
     }
