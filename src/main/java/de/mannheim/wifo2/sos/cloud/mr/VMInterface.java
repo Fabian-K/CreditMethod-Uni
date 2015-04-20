@@ -14,6 +14,7 @@ public class VMInterface {
 
     //TODO You may extend class variables for your algorithm
     private int idProcess = 1;
+    private Server server;
 
     /**
      * contains the set of missing credits for each process id
@@ -23,10 +24,13 @@ public class VMInterface {
     /**
      * Constructor
      * Initializes the list of VMs
+     *
+     * @param server
      */
-    public VMInterface() {
+    public VMInterface(Server server) {
         vms = new ArrayList<VirtualMachine>();
         missingCreditMap = new HashMap<Integer, Set<Integer>>();
+        this.server = server;
     }
 
     /**
@@ -141,14 +145,16 @@ public class VMInterface {
      * starts a process on a random VM
      * the process gets a hopcounter of 5-9
      */
-    public void startProcesses() {
+    public int startProcesses() {
+        int processId = idProcess;
+
         if (Configuration.LOG_PROCESSES || Configuration.LOG_VMINTERFACE) {
             System.out.println("VMInterface: ---------------------------------------------");
-            System.out.println("VMInterface: startCalculations() with id " + idProcess);
+            System.out.println("VMInterface: startCalculations() with id " + processId);
         }
 
         if (vms.size() == 0) {
-            return;
+            return -1;
         }
 
         int random = (int) (Math.random() * vms.size());
@@ -159,11 +165,13 @@ public class VMInterface {
         // initialize
         Set<Integer> missingCredits = new HashSet<Integer>();
         missingCredits.add(1);
-        missingCreditMap.put(idProcess, missingCredits);
+        missingCreditMap.put(processId, missingCredits);
 
-        vm.startProcess(random, idProcess, 1);
+        vm.startProcess(random, processId, 1);
 
         idProcess++;
+
+        return processId;
     }
 
     /**
@@ -204,6 +212,7 @@ public class VMInterface {
             System.out.println("VMInterface: Process " + rootProcessId + " is quiescent");
             System.out.println("VMInterface: ---------------------------------------------");
             missingCreditMap.remove(rootProcessId);
+            server.processDidFinish(rootProcessId);
         }
     }
 }

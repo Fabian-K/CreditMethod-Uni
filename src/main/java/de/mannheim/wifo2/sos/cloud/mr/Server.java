@@ -30,7 +30,7 @@ public class Server extends Thread {
      * @param port port for listening for connections
      */
     public Server(String id, int port) {
-        this.vmInterface = new VMInterface();
+        this.vmInterface = new VMInterface(this);
         try {
             this.socket = new ServerSocket(port);
             if (Configuration.LOG_SERVER) System.out.println("Server: Waiting for connection");
@@ -105,12 +105,17 @@ public class Server extends Thread {
             case 5:
                 if (Configuration.LOG_SERVER || Configuration.LOG_PROCESSES)
                     System.out.println("Server: startCalculations()");
-                vmInterface.startProcesses();
-                result = "Calculations started";
+                int processId = vmInterface.startProcesses();
+                result = "+++////+++////+++ Calculations started, using id " + processId + " +++////+++////+++";
                 break;
             default:
                 break;
         }
         out.println("Result: " + result);    //Request result is sent back to simulator
+    }
+
+    public void processDidFinish(int rootProcessId) {
+        //
+        out.print("+++////+++////+++ Process did finish: " + rootProcessId + " +++////+++////+++\n");
     }
 }
